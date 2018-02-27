@@ -150,11 +150,12 @@ class RedisStorage
 
   __submit__: (queueLength, weight) ->
     try
-      [reachedHWM, blocked, strategy] = await @runScript "submit", @prepareArray [queueLength, weight, Date.now()]
+      [reachedHWM, blocked, strategy, reservoir] = await @runScript "submit", @prepareArray [queueLength, weight, Date.now()]
       return {
         reachedHWM: @convertBool(reachedHWM),
         blocked: @convertBool(blocked),
-        strategy
+        strategy,
+        reservoir
       }
     catch e
       if e.message.indexOf("OVERWEIGHT") == 0

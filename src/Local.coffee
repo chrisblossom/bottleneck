@@ -82,7 +82,7 @@ class Local
     if blocked
       @_unblockTime = now + @computePenalty()
       @_nextRequest = @_unblockTime + @minTime
-    { reachedHWM, blocked, strategy: @strategy }
+    { reachedHWM, blocked, @strategy, @reservoir }
 
   __free__: (index, weight) ->
     await @yieldLoop()

@@ -60,10 +60,15 @@ class Bottleneck
       args.forEach (job) -> job.cb.apply {}, [new Bottleneck::BottleneckError("This job has been dropped by Bottleneck")]
     return unless @_events[name]?
     @_events[name] = @_events[name].filter (listener) -> listener.status != "none"
-    @_events[name].forEach (listener) ->
+    @_events[name].forEach (listener) =>
       return if listener.status == "none"
       if listener.status == "once" then listener.status = "none"
-      listener.cb.apply {}, args
+      try
+        ret = listener.cb.apply {}, args
+        if typeof ret?.then == "function"
+          ret.then(->).catch((e) => @_trigger "error", [e])
+      catch e
+        if "name" != "error" then @_trigger "error", [e]
   _makeQueues: -> new DLList() for i in [1..NUM_PRIORITIES]
   chain: (@_limiter) => @
   _sanitizePriority: (priority) ->
@@ -138,8 +143,9 @@ class Bottleneck
     @_trigger "debug", ["Queueing #{options.id}", { args, options }]
     @_submitLock.schedule =>
       try
-        { reachedHWM, blocked, strategy } = await @_store.__submit__ @queued(), options.weight
-        @_trigger "debug", ["Queued #{options.id}", { args, options, reachedHWM, blocked }]
+        { reachedHWM, blocked, strategy, reservoir } = await @_store.__submit__ @queued(), options.weight
+        @_trigger "debug", ["Queued #{options.id}", { args, options, reachedHWM, blocked, reservoir }]
+        if reservoir == 0 then @_trigger "queued-reservoir-depleted", [job]
       catch e
         @_trigger "debug", ["Could not queue #{options.id}", { args, options, error: e }]
         job.cb e

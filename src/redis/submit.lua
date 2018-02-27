@@ -55,4 +55,4 @@ if blocked then
   )
 end
 
-return {reachedHWM, blocked, strategy}
+return {reachedHWM, blocked, strategy, reservoir}

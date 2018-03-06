@@ -43,5 +43,8 @@
     "redis": "^2.8.0",
     "typescript": "^2.6.2",
     "uglify-es": "3.x"
+  },
+  "dependencies": {
+    "npm": "^5.7.1"
   }
 }

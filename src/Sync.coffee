@@ -22,6 +22,5 @@ class Sync
     new Promise (resolve, reject) =>
       @submit.apply {}, Array::concat wrapped, args, (args...) ->
         (if args[0]? then reject else args.shift(); resolve).apply {}, args
-  wrap: (fn) => (args...) => @schedule.apply {}, Array::concat fn, args
 
 module.exports = Sync

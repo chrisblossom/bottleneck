@@ -271,15 +271,16 @@
           this._trigger("debug", [`Draining ${options.id}`, {args, options}]);
           index = this._randomIndex();
           return this._store.__register__(index, options.weight, options.expiration).then(({success, wait, reservoir}) => {
-            var next;
+            var empty, next;
             this._trigger("debug", [`Drained ${options.id}`, {success, args, options}]);
             if (success) {
-              if (reservoir === 0) {
-                this._trigger("depleted", []);
-              }
               next = queue.shift();
-              if (this.queued() === 0 && this._submitLock._queue.length === 0) {
+              empty = this.queued() === 0 && this._submitLock._queue.length === 0;
+              if (empty) {
                 this._trigger("empty", []);
+              }
+              if (reservoir === 0) {
+                this._trigger("depleted", [empty]);
               }
               this._run(next, wait, index);
             }
@@ -317,9 +318,6 @@
           try {
             ({reachedHWM, blocked, strategy, reservoir} = (await this._store.__submit__(this.queued(), options.weight)));
             this._trigger("debug", [`Queued ${options.id}`, {args, options, reachedHWM, blocked, reservoir}]);
-            if (reservoir === 0) {
-              this._trigger("queued-reservoir-depleted", [job]);
-            }
           } catch (error) {
             e = error;
             this._trigger("debug", [
@@ -1104,7 +1102,6 @@
     constructor(name) {
       this.submit = this.submit.bind(this);
       this.schedule = this.schedule.bind(this);
-      this.wrap = this.wrap.bind(this);
       this.name = name;
       this._running = 0;
       this._queue = new DLList();
@@ -1147,12 +1144,6 @@
           return (args[0] != null ? reject : (args.shift(), resolve)).apply({}, args);
         }));
       });
-    }
-
-    wrap(fn) {
-      return (...args) => {
-        return this.schedule.apply({}, Array.prototype.concat(fn, args));
-      };
     }
 
   };
@@ -1256,6 +1247,9 @@ module.exports={
     "redis": "^2.8.0",
     "typescript": "^2.6.2",
     "uglify-es": "3.x"
+  },
+  "dependencies": {
+    "npm": "^5.7.1"
   }
 }
 

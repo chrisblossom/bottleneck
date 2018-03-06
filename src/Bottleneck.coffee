@@ -119,9 +119,10 @@ class Bottleneck
       .then ({ success, wait, reservoir }) =>
         @_trigger "debug", ["Drained #{options.id}", { success, args, options }]
         if success
-          if reservoir == 0 then @_trigger "depleted", []
           next = queue.shift()
-          if @queued() == 0 and @_submitLock._queue.length == 0 then @_trigger "empty", []
+          empty = @queued() == 0 and @_submitLock._queue.length == 0
+          if empty then @_trigger "empty", []
+          if reservoir == 0 then @_trigger "depleted", [empty]
           @_run next, wait, index
         @Promise.resolve success
   _drainAll: (freed) ->
@@ -145,7 +146,6 @@ class Bottleneck
       try
         { reachedHWM, blocked, strategy, reservoir } = await @_store.__submit__ @queued(), options.weight
         @_trigger "debug", ["Queued #{options.id}", { args, options, reachedHWM, blocked, reservoir }]
-        if reservoir == 0 then @_trigger "queued-reservoir-depleted", [job]
       catch e
         @_trigger "debug", ["Could not queue #{options.id}", { args, options, error: e }]
         job.cb e
